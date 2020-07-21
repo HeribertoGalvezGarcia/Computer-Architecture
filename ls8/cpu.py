@@ -1,11 +1,14 @@
 """CPU functionality."""
 
-from typing import List
+import sys
+from typing import List, Tuple, Union
 
-LDI = 0b10000010
-PRN = 0b01000111
-HLT = 0b00000001
-MLT = 0b10100010
+instructions = {
+    0b10000010: (2, lambda cpu, reg1, reg2: cpu.reg.__setitem__(reg1, reg2)),  # LDI
+    0b00000001: (0, lambda cpu: sys.exit()),  # HLT
+    0b01000111: (1, lambda cpu, reg1: print(cpu.reg[reg1])),  # PRN
+    0b10100010: (2, lambda cpu, reg1, reg2: cpu.alu('MLT', reg1, reg2)),  # MLT
+}
 
 
 class CPU:
@@ -79,23 +82,24 @@ class CPU:
 
         print()
 
+    def increment_pc(self) -> int:
+        value = self.pc
+        self.pc += 1
+        return value
+
+    def read_registers(self, registers: int) -> Union[Tuple[()], Tuple[int], Tuple[int, int]]:
+        return tuple(self.ram_read(self.increment_pc()) for _ in range(registers))
+
     def run(self) -> None:
         """Run the CPU."""
 
         while True:
-            instruction = self.ram_read(self.pc)
+            instruction = self.ram_read(self.increment_pc())
 
-            if instruction == LDI:
-                self.reg[self.ram_read(self.pc + 1)] = self.ram_read(self.pc + 2)
-                self.pc += 3
-            elif instruction == PRN:
-                print(self.reg[self.ram_read(self.pc + 1)])
-                self.pc += 2
-            elif instruction == MLT:
-                self.alu('MLT', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
-                self.pc += 3
-            elif instruction == HLT:
-                break
-            else:
+            try:
+                registers, cb = instructions[instruction]
+            except KeyError:
                 print(f'Unknown instruction {instruction} at address {self.pc}')
-                break
+                sys.exit()
+
+            cb(self, *self.read_registers(registers))
