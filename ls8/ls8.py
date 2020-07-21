@@ -3,9 +3,15 @@
 """Main."""
 
 import sys
+
 from cpu import *
+
+if len(sys.argv) == 1:
+    print('Missing file name.')
+    sys.exit()
+
 
 cpu = CPU()
 
-cpu.load()
+cpu.load(sys.argv[1])
 cpu.run()

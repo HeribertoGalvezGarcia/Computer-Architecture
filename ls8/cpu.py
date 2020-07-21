@@ -5,6 +5,7 @@ from typing import List
 LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001
+MLT = 0b10100010
 
 
 class CPU:
@@ -27,22 +28,22 @@ class CPU:
     def ram_write(self, address: int, value: int) -> None:
         self.ram[address] = value
 
-    def load(self) -> None:
+    def load(self, file_name: str) -> None:
         """Load a program into memory."""
 
         address = 0
 
-        # For now, we've just hardcoded a program:
+        program = []
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+        with open(file_name) as f:
+            lines = f.readlines()
+
+        for line in lines:
+            instruction, _, _ = line.strip('\n').partition('#')
+            if not instruction:
+                continue
+
+            program.append(int(instruction, 2))
 
         for instruction in program:
             self.ram[address] = instruction
@@ -53,7 +54,8 @@ class CPU:
 
         if op == 'ADD':
             self.reg[reg_a] += self.reg[reg_b]
-        # elif op == "SUB": etc
+        elif op == "MLT":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception('Unsupported ALU operation')
 
@@ -89,6 +91,9 @@ class CPU:
             elif instruction == PRN:
                 print(self.reg[self.ram_read(self.pc + 1)])
                 self.pc += 2
+            elif instruction == MLT:
+                self.alu('MLT', self.ram_read(self.pc + 1), self.ram_read(self.pc + 2))
+                self.pc += 3
             elif instruction == HLT:
                 break
             else:
