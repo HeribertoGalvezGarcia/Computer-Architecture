@@ -1,15 +1,33 @@
 """CPU functionality."""
 
-import sys
+from typing import List
+
+LDI = 0b10000010
+PRN = 0b01000111
+HLT = 0b00000001
+
 
 class CPU:
     """Main CPU class."""
 
-    def __init__(self):
-        """Construct a new CPU."""
-        pass
+    pc: int
+    ram: List[int]
+    reg: List[int]
 
-    def load(self):
+    def __init__(self) -> None:
+        """Construct a new CPU."""
+
+        self.pc = 0
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+
+    def ram_read(self, address: int) -> int:
+        return self.ram[address]
+
+    def ram_write(self, address: int, value: int) -> None:
+        self.ram[address] = value
+
+    def load(self) -> None:
         """Load a program into memory."""
 
         address = 0
@@ -18,27 +36,26 @@ class CPU:
 
         program = [
             # From print8.ls8
-            0b10000010, # LDI R0,8
+            0b10000010,  # LDI R0,8
             0b00000000,
             0b00001000,
-            0b01000111, # PRN R0
+            0b01000111,  # PRN R0
             0b00000000,
-            0b00000001, # HLT
+            0b00000001,  # HLT
         ]
 
         for instruction in program:
             self.ram[address] = instruction
             address += 1
 
-
-    def alu(self, op, reg_a, reg_b):
+    def alu(self, op: str, reg_a: int, reg_b: int) -> None:
         """ALU operations."""
 
-        if op == "ADD":
+        if op == 'ADD':
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        # elif op == "SUB": etc
         else:
-            raise Exception("Unsupported ALU operation")
+            raise Exception('Unsupported ALU operation')
 
     def trace(self):
         """
@@ -48,8 +65,8 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
-            #self.ie,
+            # self.fl,
+            # self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
             self.ram_read(self.pc + 2)
@@ -60,6 +77,20 @@ class CPU:
 
         print()
 
-    def run(self):
+    def run(self) -> None:
         """Run the CPU."""
-        pass
+
+        while True:
+            instruction = self.ram_read(self.pc)
+
+            if instruction == LDI:
+                self.reg[self.ram_read(self.pc + 1)] = self.ram_read(self.pc + 2)
+                self.pc += 3
+            elif instruction == PRN:
+                print(self.reg[self.ram_read(self.pc + 1)])
+                self.pc += 2
+            elif instruction == HLT:
+                break
+            else:
+                print(f'Unknown instruction {instruction} at address {self.pc}')
+                break
