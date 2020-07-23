@@ -8,6 +8,8 @@ instructions = {
     0b00000001: (0, lambda cpu: sys.exit()),  # HLT
     0b01000111: (1, lambda cpu, reg1: print(cpu.reg[reg1])),  # PRN
     0b10100010: (2, lambda cpu, reg1, reg2: cpu.alu('MLT', reg1, reg2)),  # MLT
+    0b01000101: (1, lambda cpu, reg1: (cpu.reg.__setitem__(7, cpu.reg[7] - 1), cpu.ram.__setitem__(cpu.reg[7], cpu.reg[reg1]))),  # PUSH
+    0b01000110: (1, lambda cpu, reg1: (cpu.reg.__setitem__(reg1, cpu.ram[cpu.reg[7]]), cpu.reg.__setitem__(7, cpu.reg[7] + 1))),  # POP
 }
 
 
@@ -23,7 +25,7 @@ class CPU:
 
         self.pc = 0
         self.ram = [0] * 256
-        self.reg = [0] * 8
+        self.reg = [0] * 7 + [0x74]
 
     def ram_read(self, address: int) -> int:
         return self.ram[address]
