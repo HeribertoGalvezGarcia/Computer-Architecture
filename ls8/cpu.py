@@ -13,6 +13,10 @@ instructions = {
     0b01000110: (1, lambda cpu, reg1: cpu.reg.__setitem__(reg1, cpu.pop_stack())),  # POP
     0b01010000: (1, lambda cpu, reg1: (cpu.push_stack(cpu.pc), setattr(cpu, 'pc', cpu.reg[reg1]))),  # CALL
     0b00010001: (0, lambda cpu: setattr(cpu, 'pc', cpu.pop_stack())),  # RET
+    0b10100111: (2, lambda cpu, reg1, reg2: cpu.alu('CMP', reg1, reg2)),  # CMP
+    0b01010101: (1, lambda cpu, reg1: setattr(cpu, 'pc', cpu.reg[reg1]) if cpu.fl == 1 else None),  # JEQ
+    0b01010110: (1, lambda cpu, reg1: setattr(cpu, 'pc', cpu.reg[reg1]) if cpu.fl != 1 else None),  # JNE
+    0b01010100: (1, lambda cpu, reg1: setattr(cpu, 'pc', cpu.reg[reg1])),  # JMP
 }
 
 
@@ -22,6 +26,7 @@ class CPU:
     pc: int
     ram: List[int]
     reg: List[int]
+    fl: int
 
     def __init__(self) -> None:
         """Construct a new CPU."""
@@ -29,6 +34,7 @@ class CPU:
         self.pc = 0
         self.ram = [0] * 256
         self.reg = [0] * 7 + [0x74]
+        self.fl = 0
 
     def ram_read(self, address: int) -> int:
         return self.ram[address]
@@ -73,6 +79,10 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MLT":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == 'CMP':
+            a = self.reg[reg_a]
+            b = self.reg[reg_b]
+            self.fl = 0b100 if a < b else 0b10 if a > b else 1
         else:
             raise Exception('Unsupported ALU operation')
 
