@@ -7,9 +7,12 @@ instructions = {
     0b10000010: (2, lambda cpu, reg1, reg2: cpu.reg.__setitem__(reg1, reg2)),  # LDI
     0b00000001: (0, lambda cpu: sys.exit()),  # HLT
     0b01000111: (1, lambda cpu, reg1: print(cpu.reg[reg1])),  # PRN
+    0b10100000: (2, lambda cpu, reg1, reg2: cpu.alu('ADD', reg1, reg2)),  # ADD
     0b10100010: (2, lambda cpu, reg1, reg2: cpu.alu('MLT', reg1, reg2)),  # MLT
-    0b01000101: (1, lambda cpu, reg1: (cpu.reg.__setitem__(7, cpu.reg[7] - 1), cpu.ram.__setitem__(cpu.reg[7], cpu.reg[reg1]))),  # PUSH
-    0b01000110: (1, lambda cpu, reg1: (cpu.reg.__setitem__(reg1, cpu.ram[cpu.reg[7]]), cpu.reg.__setitem__(7, cpu.reg[7] + 1))),  # POP
+    0b01000101: (1, lambda cpu, reg1: cpu.push_stack(cpu.reg[reg1])),  # PUSH
+    0b01000110: (1, lambda cpu, reg1: cpu.reg.__setitem__(reg1, cpu.pop_stack())),  # POP
+    0b01010000: (1, lambda cpu, reg1: (cpu.push_stack(cpu.pc), setattr(cpu, 'pc', cpu.reg[reg1]))),  # CALL
+    0b00010001: (0, lambda cpu: setattr(cpu, 'pc', cpu.pop_stack())),  # RET
 }
 
 
@@ -32,6 +35,15 @@ class CPU:
 
     def ram_write(self, address: int, value: int) -> None:
         self.ram[address] = value
+
+    def push_stack(self, value: int) -> None:
+        self.reg[-1] -= 1
+        self.ram[self.reg[-1]] = value
+
+    def pop_stack(self) -> int:
+        value = self.ram[self.reg[-1]]
+        self.reg[-1] += 1
+        return value
 
     def load(self, file_name: str) -> None:
         """Load a program into memory."""
